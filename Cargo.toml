@@ -1,0 +1,8 @@
+[package]
+name = "rculock"
+version = "0.1.0"
+authors = ["Kevin Liu <mail@nivekuil.com>"]
+
+[dependencies]
+crossbeam = "0.2"
+parking_lot = "0.3"
