@@ -57,7 +57,7 @@ impl<T: Clone> RcuLock<T> {
     pub fn read(&self) -> Arc<T> {
         let epoch = epoch::pin();
         let inner = self.inner.load(Relaxed, &epoch);
-        inner.unwrap().deref().deref().clone()
+        Arc::clone(&inner.unwrap())
     }
 
     /// Acquire an exclusive write handle to the `RcuLock`, protected by an `RcuGuard`.
@@ -68,7 +68,7 @@ impl<T: Clone> RcuLock<T> {
     pub fn write(&self) -> RcuGuard<T> {
         let guard = self.write_lock.lock();
         let epoch = epoch::pin();
-        let data: T = self.inner.load(Relaxed, &epoch).unwrap().deref().deref().deref().clone();
+        let data = T::clone(&self.inner.load(Relaxed, &epoch).unwrap());
         RcuGuard {
             lock: self,
             data: data,
