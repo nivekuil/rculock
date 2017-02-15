@@ -1,0 +1,28 @@
+* rculock
+A [[https://en.wikipedia.org/wiki/Read-copy-update][read-copy-update]] lock using [[https://aturon.github.io/blog/2015/08/27/epoch/][epoch-based reclamation]] through [[https://github.com/aturon/crossbeam][crossbeam]].
+
+The API is similar to =std::sync::RwLock=. Reads are lock-free and never block.  Writes update the data protected by the lock only when the write guard is dropped.
+
+See [[https://docs.rs/rculock/][documentation]] for more details.
+
+** Example
+#+BEGIN_SRC rust
+use rculock::{RcuLock, RcuGuard};
+
+// Create a new RcuLock protecting a piece of data, in this case a number (u32).
+let data: RcuLock<u32> = RcuLock::new(5);
+assert_eq!(5, *data.read());
+{
+    // The data is cloned and handed to the writer
+    let mut guard: RcuGuard<u32> = data.write();
+    // RcuGuard implements `Deref` and `DerefMut` for easy access to the data.
+    *guard = 4;
+    // The writer has changed its copy of the data, but the changes
+    // have not yet made it back to the master `RcuLock`.
+    assert_eq!(5, *data.read());
+}
+// After the write guard is dropped, the state of the resource
+// as the writer sees it is atomically stored back into the master RcuLock.
+assert_eq!(4, *data.read());
+#+END_SRC
+
