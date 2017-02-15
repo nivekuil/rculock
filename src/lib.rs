@@ -29,8 +29,8 @@ use std::ops::{Deref, DerefMut};
 use crossbeam::mem::epoch::{self, Atomic, Owned};
 use parking_lot::{Mutex, MutexGuard};
 
-unsafe impl<T: Clone> Sync for RcuLock<T> {}
-unsafe impl<T: Clone> Send for RcuLock<T> {}
+unsafe impl<T: Clone + Send + Sync> Sync for RcuLock<T> {}
+unsafe impl<T: Clone + Send> Send for RcuLock<T> {}
 #[derive(Debug)]
 pub struct RcuLock<T: Clone> {
     /// The resource protected by the lock, behind an `Atomic` for atomic stores,
