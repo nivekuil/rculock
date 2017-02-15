@@ -2,6 +2,9 @@
 name = "rculock"
 version = "0.1.0"
 authors = ["Kevin Liu <mail@nivekuil.com>"]
+description = "A synchronization primitive for unlimited lock-free reads with one concurrent writer."
+categories = ["concurrency"]
+license = "MIT"
 
 [dependencies]
 crossbeam = "0.2"
