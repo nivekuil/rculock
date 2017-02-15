@@ -1,11 +1,17 @@
 * rculock
+
 A [[https://en.wikipedia.org/wiki/Read-copy-update][read-copy-update]] lock using [[https://aturon.github.io/blog/2015/08/27/epoch/][epoch-based reclamation]] through [[https://github.com/aturon/crossbeam][crossbeam]].
 
 The API is similar to =std::sync::RwLock=. Reads are lock-free and never block.  Writes update the data protected by the lock only when the write guard is dropped.
 
 See [[https://docs.rs/rculock/][documentation]] for more details.
 
-** Example
+** Usage
+#+BEGIN_SRC toml
+[dependencies]
+rculock = "0.1"
+#+END_SRC
+*** Examples
 #+BEGIN_SRC rust
 use rculock::{RcuLock, RcuGuard};
 
