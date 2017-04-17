@@ -8,5 +8,5 @@ categories = ["concurrency"]
 license = "MIT"
 
 [dependencies]
-crossbeam = "0.2"
+coco = "0.1.0"
 parking_lot = "0.3"
