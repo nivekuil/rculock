@@ -24,15 +24,16 @@
 extern crate parking_lot;
 extern crate crossbeam;
 use std::sync::Arc;
+use std::sync::atomic::Ordering::Relaxed;
 use std::ops::{Deref, DerefMut};
-use crossbeam::sync::ArcCell;
+use crossbeam::mem::epoch::{self, Atomic, Owned};
 use parking_lot::{Mutex, MutexGuard};
 
 #[derive(Debug)]
 pub struct RcuLock<T: Clone> {
     /// The resource protected by the lock, behind an `Atomic` for atomic stores,
     /// and an Arc to hand the resource out to readers without fear of memory leaks.
-    inner: ArcCell<T>,
+    inner: Atomic<Arc<T>>,
     /// Mutex to ensure at most one writer to prevent a data race, which will occur
     /// when multiple writers each acquire a copy of the resource protected by the
     /// `RcuLock`, write to it, and then store their individual changes to the master `RcuLock`.
@@ -43,7 +44,9 @@ pub struct RcuLock<T: Clone> {
 impl<T: Clone> RcuLock<T> {
     /// Create a new RcuLock.
     pub fn new(target: T) -> RcuLock<T> {
-        let inner = ArcCell::new(Arc::new(target));
+        let inner = Atomic::null();
+        let arc = Owned::new(Arc::new(target));
+        inner.store(Some(arc), Relaxed);
         RcuLock {
             inner: inner,
             write_lock: Mutex::new(()),
@@ -52,7 +55,9 @@ impl<T: Clone> RcuLock<T> {
 
     /// Acquire a read handle to the `RcuLock`.  This operation never blocks.
     pub fn read(&self) -> Arc<T> {
-        self.inner.get()
+        let epoch = epoch::pin();
+        let inner = self.inner.load(Relaxed, &epoch);
+        Arc::clone(&inner.unwrap())
     }
 
     /// Acquire an exclusive write handle to the `RcuLock`, protected by an `RcuGuard`.
@@ -62,10 +67,11 @@ impl<T: Clone> RcuLock<T> {
     /// Clones the data protected by the `RcuLock`, which can be expensive.
     pub fn write(&self) -> RcuGuard<T> {
         let guard = self.write_lock.lock();
-        let data = self.inner.get();
+        let epoch = epoch::pin();
+        let data = T::clone(&self.inner.load(Relaxed, &epoch).unwrap());
         RcuGuard {
             lock: self,
-            data: (*data).clone(),
+            data: data,
             _guard: guard,
         }
     }
@@ -93,7 +99,7 @@ impl<'a, T: Clone> Deref for RcuGuard<'a, T> {
 /// On drop, atomically store the data back into the owning `RcuLock`.
 impl<'a, T: Clone> Drop for RcuGuard<'a, T> {
     fn drop(&mut self) {
-        let data = Arc::new(self.data.clone());
-        self.lock.inner.set(data);
+        let data = Owned::new(Arc::new(self.data.clone()));
+        self.lock.inner.store(Some(data), Relaxed)
     }
 }
