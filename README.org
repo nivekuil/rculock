@@ -1,8 +1,7 @@
 * rculock
-*Please don't use this project at the moment - see [[https://github.com/nivekuil/rculock/issues/1][#1]]*
-A [[https://en.wikipedia.org/wiki/Read-copy-update][read-copy-update]] lock using [[https://aturon.github.io/blog/2015/08/27/epoch/][epoch-based reclamation]] through [[https://github.com/aturon/crossbeam][crossbeam]].
+A [[https://en.wikipedia.org/wiki/Read-copy-update][read-copy-update]] lock using [[https://aturon.github.io/blog/2015/08/27/epoch/][epoch-based reclamation]] through [[https://github.com/stjepang/coco][coco]].
 
-The API is similar to =std::sync::RwLock=. Reads are lock-free and never block.  Writes update the data protected by the lock only when the write guard is dropped.
+The API is similar to =std::sync::RwLock=.  Readers are lock-free and can exist concurrently with a writer, which updates the data protected by the lock only when the write guard is dropped.
 
 See [[https://docs.rs/rculock/][documentation]] for more details.
 
